@@ -7,12 +7,12 @@
 set -e
 
 # dir where the script is, no matter from where it is being called from
-SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"   
+SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # path to the cmake file containing the toolchain informations
 TOOLCHAIN_CMAKE_PATH=$HOME/esp/esp-idf/tools/cmake/toolchain-esp32.cmake
 
-# path where to copy the build libs and headers 
+# path where to copy the build libs and headers
 LIB_INSTALL_PATH=$SCRIPTDIR/../lib
 
 # list of modules to compile
@@ -25,16 +25,16 @@ echo "##########################################################################
 ## get script arguments ###
 if [ -z "$1" ]
   then
-    echo "Using default toolchain cmake file path: ${TOOLCHAIN_CMAKE_PATH}" 
-else 
+    echo "Using default toolchain cmake file path: ${TOOLCHAIN_CMAKE_PATH}"
+else
      TOOLCHAIN_CMAKE_PATH=$1
      echo "Using toolchain cmake file path: ${TOOLCHAIN_CMAKE_PATH}"
 fi
 
 if [ -z "$2" ]
   then
-    echo "Will be installed in default library install path: ${LIB_INSTALL_PATH}/opencv" 
-else 
+    echo "Will be installed in default library install path: ${LIB_INSTALL_PATH}/opencv"
+else
      LIB_INSTALL_PATH=$2
      echo "Will be installed in user-defined library install path: ${LIB_INSTALL_PATH}/opencv"
 fi
@@ -55,12 +55,12 @@ echo "==========================================================================
 OPENCV_MODULES_LIST=`cmake $CMAKE_ARGS .. | tee /dev/tty | grep 'To be built' | cut -f2 -d ':' | xargs | tr ' ' ','`
 echo $OPENCV_MODULES_LIST
 read -p "Don't forget to check the cmake summary! Continue ? [y/N]"  prompt
-if [ "${prompt}" != "y" ] && [ "${prompt}" != "Y" ] && [ "${prompt}" != "yes" ]; then 
+if [ "${prompt}" != "y" ] && [ "${prompt}" != "Y" ] && [ "${prompt}" != "yes" ]; then
     echo "aborted."
-	exit 1
+        exit 1
 fi
 
-# fix of the generated file alloc.c 
+# fix of the generated file alloc.c
 cp $SCRIPTDIR/resources/alloc_fix.cpp ./3rdparty/ade/ade-0.1.1f/sources/ade/source/alloc.cpp
 
 # compiling with all power!
@@ -95,5 +95,3 @@ do
 done
 
 echo "installation done."
-
-
