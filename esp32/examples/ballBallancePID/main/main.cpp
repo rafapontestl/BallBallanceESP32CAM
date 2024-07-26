@@ -3,7 +3,6 @@
 #include <cstring>
 
 #include "app_camera.h"
-//#include "app_pwm.h"
 #include "const_def.h"
 
 
@@ -51,8 +50,8 @@ void initializeWiFi(){
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL));
 
     wifi_config_t wifi_config = {};
-    strcpy(reinterpret_cast<char *>(wifi_config.sta.ssid), "Homeazul");
-    strcpy(reinterpret_cast<char *>(wifi_config.sta.password), "thaisSabe12");
+    strcpy(reinterpret_cast<char *>(wifi_config.sta.ssid), "Rptl");
+    strcpy(reinterpret_cast<char *>(wifi_config.sta.password), "11111111");
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
@@ -62,35 +61,8 @@ void initializeWiFi(){
     ESP_LOGI(TAG, "Connecting to WiFi...");
 };
 
-void initializeLED(){
-  ledc_timer_config_t ledc_timer = {
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .duty_resolution = LEDC_TIMER_8_BIT, 
-        .timer_num = LEDC_TIMER_2, 
-        .freq_hz = 5,
-        .clk_cfg = LEDC_AUTO_CLK
-    };
-    
-    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
-
-    ledc_channel_config_t ledc_channel = {
-        .gpio_num = 33,
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .channel = LEDC_CHANNEL_4,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = LEDC_TIMER_2,
-        .duty = 0, 
-        .hpoint = 0 
-    };
-    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
-
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_4, 255));
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_4));
-
-}
 
 void app_main() {
-    initializeLED();
 
     initializeNVS();
 

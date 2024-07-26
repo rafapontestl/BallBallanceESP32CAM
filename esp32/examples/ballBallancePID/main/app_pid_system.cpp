@@ -12,7 +12,7 @@
 #include "lwip/sys.h"
 
 #include "app_pid.h"
-#include "app_servo.h"
+//#include "app_servo.h"
 #include "app_process_image.h"
 
 
@@ -168,7 +168,7 @@ void generatePatterns(map<string, vector<pair<float, float>>>& mapPatterns, map<
 	mapTemp["triangle"] = 60;
 	mapTemp["limniscate"] = 1;
 }
-
+/*
 void reciverAndUpdateConstants(){
 	/// recebe a mensagem UDP
 	char rx_buffer[128];
@@ -252,12 +252,12 @@ void initVariables(){
         return;
     }
     ESP_LOGI("udpServer", "Socket bound, port %d", PORT);
-	/*
+	
 	fb = esp_camera_fb_get();
     if (!fb) {
         ESP_LOGE(TAG,"Camera capture failed");
         return;
-    }*/
+    }
 }
 
 void responseForBallPosition(){
@@ -288,14 +288,77 @@ void responseForBallPosition(){
 		}
 	}	
 }
+*/
+uint16_t ticks;
+int value;
+
+uint16_t getTicksFromAngle(uint8_t i){
+  uint16_t value = 544 + (2400-544)*i/180;
+  return (int)((double)value / ((double)20000 / (double)1024)*(((double)50)/50.0));
+}
+
+typedef struct Serv{
+  uint8_t ang1;
+  uint8_t ang2;
+  uint8_t ang3;
+} Serv;
+
+
+void setServoAngleLEDC(ledc_channel_t channel, uint8_t angle) {
+    uint16_t ticks = getTicksFromAngle(angle);
+    ESP_ERROR_CHECK(ledc_set_duty(LEDC_HIGH_SPEED_MODE, channel, ticks));
+    ESP_ERROR_CHECK(ledc_update_duty(LEDC_HIGH_SPEED_MODE, channel));
+}
+
+void setServoAngles(Serv *ang){
+    
+	if(ang->ang1 > SERVO_MAX_ANGLE) ang->ang1 = SERVO_MAX_ANGLE;
+    if(ang->ang1 < SERVO_MIN_ANGLE) ang->ang1 = SERVO_MIN_ANGLE;
+	if(ang->ang2 > SERVO_MAX_ANGLE) ang->ang2 = SERVO_MAX_ANGLE;
+    if(ang->ang2 < SERVO_MIN_ANGLE) ang->ang2 = SERVO_MIN_ANGLE;
+	if(ang->ang3 > SERVO_MAX_ANGLE) ang->ang3 = SERVO_MAX_ANGLE;
+    if(ang->ang3 < SERVO_MIN_ANGLE) ang->ang3 = SERVO_MIN_ANGLE;
+
+	ESP_LOGI(TAG,"Os angulos depois: (%u, %u, %u)\n", ang->ang1, ang->ang2, ang->ang3);
+	
+    setServoAngleLEDC(LEDC_CHANNEL_1, ang->ang1);
+    setServoAngleLEDC(LEDC_CHANNEL_2, ang->ang2);
+	setServoAngleLEDC(LEDC_CHANNEL_4, ang->ang3);
+    
+	
+}
+
+void configureLEDCChannel(int gpio_num, ledc_channel_t channel) {
+    ledc_channel_config_t ledc_channel = {
+        .gpio_num = gpio_num, // Pino GPIO conectado ao servo
+        .speed_mode = LEDC_HIGH_SPEED_MODE, // Modo de alta velocidade
+        .channel = channel, // Canal do LEDC
+        .intr_type = LEDC_INTR_DISABLE, // Desabilitar interrupção
+        .timer_sel = LEDC_TIMER_1,
+        .duty = 0, 
+        .hpoint = 0 
+    };
+    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
+}
+
+void configureLEDCServos() {
+    ledc_timer_config_t ledc_timer = {
+        .speed_mode = LEDC_HIGH_SPEED_MODE, // Modo de alta velocidade
+        .duty_resolution = LEDC_TIMER_10_BIT, 
+        .timer_num = LEDC_TIMER_1, 
+        .freq_hz = 50, // Frequência de 50 Hz para servos
+        .clk_cfg = LEDC_AUTO_CLK // Seleção automática de clock
+    };
+    
+    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
+
+	  configureLEDCChannel(SERVO_1_PIN, LEDC_CHANNEL_1); 
+    configureLEDCChannel(SERVO_2_PIN, LEDC_CHANNEL_2); 
+    configureLEDCChannel(SERVO_3_PIN, LEDC_CHANNEL_4); 
+}
 
 void runSystemPID(void *args){
-	int64_t fr_end, frame_time;
-	static int64_t last_frame = 0;
-	ball.detected = false;
-
-	uint16_t ballInformationResponse[3] = {0,0,0}; 
-	//teste servos
+	configureLEDCServos();
 	uint8_t i = 0;
 	Serv anglesPosition[3];
 	anglesPosition[0].ang1 = 100;
@@ -307,15 +370,21 @@ void runSystemPID(void *args){
 	anglesPosition[2].ang1 = 170;
 	anglesPosition[2].ang2 = 100;
 	anglesPosition[2].ang3 = 130;
+	
+	int64_t fr_end, frame_time;
+	static int64_t last_frame = 0;
+	ball.detected = false;
 
-	initiateServos();
+	uint16_t ballInformationResponse[3] = {0,0,0}; 
+	//teste servos
+	
+
+	//initiateServos();
 	initVariables();
 	xTaskCreatePinnedToCore(getImageFromCameraTask, "getImageFromCameraTask", 1024*9, NULL, 5, &getImageFromCameraTaskHandle, 1);
     
 	last_frame = esp_timer_get_time();
-
     while (true) {
-		/*
 		convertFrameToRGB888(fb);
 		esp_camera_fb_return(fb);
 
@@ -331,12 +400,12 @@ void runSystemPID(void *args){
 			ball.detected = true;
 		}
 		else ball.detected = false; // no ball case
-		*/
-		setServoAngles(anglesPosition[i].ang1, anglesPosition[i].ang2, anglesPosition[i].ang3);
+		setServoAngles(&anglesPosition[i]);
 		i = (i+1)%3;
 		//responseForBallPosition(); 
 
 		/// calculate fps rate
+		
 		fr_end = esp_timer_get_time();
 		
 		frame_time = fr_end - last_frame;
